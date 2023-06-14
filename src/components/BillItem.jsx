@@ -1,34 +1,18 @@
-import { useState } from 'react'
 import styled from 'styled-components'
 import { GrDocumentPdf } from 'react-icons/gr'
-import { FiDownload } from 'react-icons/fi'
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  Image,
-  usePDF,
-  PDFDownloadLink
-} from '@react-pdf/renderer'
+import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib'
 
 import logo from '../assets/logo.png'
 import seal from '../assets/payment-seal.png'
 import { Colors } from '../constants/Colors'
 import { FontFamily } from '../constants/Fonts'
-import { useEffect } from 'react'
 
 const { primaryBlue, secondaryBlue, colorText } = Colors
 
 export const BillItem = ({ bill, user, months }) => {
-  const [viewPdf, setViewPdf] = useState(false)
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth)
-  const [mobile, setMobile] = useState(windowWidth < 800)
   const month = months.find((m) => m.value === bill.month).month
-  const [doc, setDoc] = useState(null)
-  const [instance, updateInstance] = usePDF({ document: doc })
 
-  useEffect(() => {
+  /* useEffect(() => {
     if (user) {
       const newDoc = (
         <Document>
@@ -98,27 +82,96 @@ export const BillItem = ({ bill, user, months }) => {
       )
       setDoc(newDoc)
     }
-  }, [user, bill, month])
+  }, [user, bill, month]) */
 
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth)
-    }
+  async function createPDFWithReactPDF() {
+    const pdfDoc = await PDFDocument.create()
+    const page = pdfDoc.addPage()
 
-    window.addEventListener('resize', handleResize)
+    const { width, height } = page.getSize()
 
-    return () => {
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [])
+    const logoBytes = await fetch(logo).then((response) =>
+      response.arrayBuffer()
+    )
+    const sealBytes = await fetch(seal).then((response) =>
+      response.arrayBuffer()
+    )
 
-  useEffect(() => {
-    setMobile(windowWidth < 800)
-  }, [windowWidth])
+    const logoImage = await pdfDoc.embedPng(logoBytes)
+    const sealImage = await pdfDoc.embedPng(sealBytes)
 
-  const handlePdf = () => {
-    updateInstance({ document: doc })
-    setViewPdf(!viewPdf)
+    const logoWidth = 272
+    const logoHeight = 70
+
+    const sealWidth = 120
+    const sealHeight = 120
+
+    page.drawImage(logoImage, {
+      x: width / 2 - logoWidth / 2,
+      y: height - 100,
+      width: logoWidth,
+      height: logoHeight
+    })
+
+    page.drawText(`Pago ${month} - ${bill.year}`, {
+      x: 50,
+      y: height - 200,
+      size: 32,
+      font: await pdfDoc.embedFont(StandardFonts.HelveticaBold),
+      color: rgb(0, 0, 1)
+    })
+
+    page.drawText(`Usuario: ${user.username} ${user.surname}.`, {
+      x: 60,
+      y: height - 300,
+      size: 18,
+      font: await pdfDoc.embedFont(StandardFonts.Helvetica),
+      color: rgb(0, 0, 0)
+    })
+
+    page.drawText(`Email: ${user.email}.`, {
+      x: 60,
+      y: height - 370,
+      size: 18,
+      font: await pdfDoc.embedFont(StandardFonts.Helvetica),
+      color: rgb(0, 0, 0)
+    })
+
+    page.drawText(`Fecha: ${bill.day} de ${month} del ${bill.year}.`, {
+      x: 60,
+      y: height - 440,
+      size: 18,
+      font: await pdfDoc.embedFont(StandardFonts.Helvetica),
+      color: rgb(0, 0, 0)
+    })
+
+    page.drawText(`Monto: $${bill.mount}.`, {
+      x: 60,
+      y: height - 510,
+      size: 18,
+      font: await pdfDoc.embedFont(StandardFonts.Helvetica),
+      color: rgb(0, 0, 0)
+    })
+
+    page.drawImage(sealImage, {
+      x: width - sealWidth - 50,
+      y: 50,
+      width: sealWidth,
+      height: sealHeight,
+      rotate: degrees(-15)
+    })
+
+    const pdfBytes = await pdfDoc.save()
+
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'output.pdf'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -128,28 +181,10 @@ export const BillItem = ({ bill, user, months }) => {
           <GrDocumentPdf size="1.5rem" />
           Pago {month} - {bill.year}
         </Namebill>
-        {!mobile ? (
-          <BillButton type="button" onClick={handlePdf}>
-            {viewPdf ? 'X' : 'Ver/Descargar PDF'}
-          </BillButton>
-        ) : (
-          <DownloadButton>
-            <PDFDownloadLink
-              document={doc}
-              fileName={`Pago ${month} ${bill.year} - ${user.first_name} ${user.last_name}`}
-            >
-              {({ blob, url, loading, error }) =>
-                loading ? 'Cargando documento...' : <FiDownload />
-              }
-            </PDFDownloadLink>
-          </DownloadButton>
-        )}
+        <BillButton type="button" onClick={createPDFWithReactPDF}>
+          Descargar PDF
+        </BillButton>
       </BillItemContainer>
-      {viewPdf && (
-        <PdfContainer>
-          <Pdf src={instance.url} type="application/pdf"></Pdf>
-        </PdfContainer>
-      )}
     </Container>
   )
 }
@@ -191,18 +226,6 @@ const BillItemContainer = styled.div`
 
 const Container = styled.div``
 
-const DownloadButton = styled.div`
-  margin: 3vw 2vw 0vw 0vw;
-
-  @media screen and (max-width: 480px) {
-    margin: 5vw 1vw 0vw 0vw;
-  }
-
-  svg {
-    font-size: 1.5rem;
-  }
-`
-
 const Namebill = styled.p`
   font-size: 1.3rem;
 
@@ -217,23 +240,4 @@ const Namebill = styled.p`
   svg {
     margin-right: 0.5rem;
   }
-`
-
-const Pdf = styled.embed`
-  width: 50vw;
-  height: 25vw;
-
-  @media screen and (max-width: 1400px) {
-    width: 60vw;
-    height: 30vw;
-  }
-
-  @media screen and (max-width: 930px) {
-    width: 70vw;
-    height: 35vw;
-  }
-`
-
-const PdfContainer = styled.div`
-  text-align: center;
 `

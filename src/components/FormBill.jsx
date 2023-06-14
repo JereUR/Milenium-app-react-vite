@@ -2,10 +2,7 @@ import { useState } from 'react'
 import styled from 'styled-components'
 import { FaEdit } from 'react-icons/fa'
 import { toast, Toaster } from 'react-hot-toast'
-import { Document, Page, Text, View, Image, usePDF } from '@react-pdf/renderer'
 
-import logo from '../assets/logo.png'
-import seal from '../assets/payment-seal.png'
 import Loader from './Loader'
 import { Colors } from '../constants/Colors'
 import { FontFamily } from '../constants/Fonts'
@@ -26,77 +23,7 @@ export const FormBill = ({ users, dbLocal }) => {
   const [name, setName] = useState(null)
   const [surname, setSurname] = useState(null)
   const [errors, setErrors] = useState({})
-  const [viewPdf, setViewPdf] = useState(false)
   const [loading, setLoading] = useState(false)
-
-  const doc = (
-    <Document>
-      <Page
-        size="A5"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: 'white'
-        }}
-      >
-        <View
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            textAlign: 'center',
-            backgroundColor: 'white',
-            padding: 1
-          }}
-        >
-          <Image
-            src={logo}
-            alt="random image"
-            style={{ maxWidth: '150px', maxHeight: 'auto', top: '-10vw' }}
-          />
-          <Text
-            style={{
-              color: `${primaryBlue}`,
-              fontSize: '36px',
-              alignItems: 'center',
-              margin: 'auto auto 10vw auto',
-              fontWeight: 'bold'
-            }}
-          >
-            Pago {monthText} - {year}
-          </Text>
-
-          <Text style={{ textAlign: 'justify', marginTop: '30px' }}>
-            Usuario: {name} {surname}.
-          </Text>
-          <Text style={{ textAlign: 'justify', marginTop: '30px' }}>
-            Email: {forData}.
-          </Text>
-          <Text style={{ textAlign: 'justify', marginTop: '30px' }}>
-            Fecha: {day} de {monthText} del {year}.
-          </Text>
-          <Text style={{ textAlign: 'justify', marginTop: '30px' }}>
-            Monto: ${mount}.
-          </Text>
-          <Image
-            src={seal}
-            alt="random image"
-            style={{
-              maxWidth: '120px',
-              maxHeight: '120px',
-              marginLeft: '60%',
-              top: '10vw',
-              transform: 'rotate(-15)'
-            }}
-          />
-        </View>
-      </Page>
-    </Document>
-  )
-
-  const [instance, updateInstance] = usePDF({ document: doc })
 
   const getYearNow = () => {
     return new Date().getFullYear()
@@ -241,16 +168,6 @@ export const FormBill = ({ users, dbLocal }) => {
 
   const handleMount = (e) => {
     setMount(parseFloat(e.target.value.replace(',', '.')))
-  }
-
-  const handlePdf = () => {
-    const err = onValidate()
-    setErrors(err)
-
-    if (Object.keys(err).length === 0) {
-      updateInstance({ document: doc })
-      setViewPdf(true)
-    }
   }
 
   const handleSubmit = async (e) => {
@@ -411,14 +328,6 @@ export const FormBill = ({ users, dbLocal }) => {
           </InputContainer>
         </MountContainer>
         {errors.form && <ErrorInput>{errors.form}</ErrorInput>}
-        <ButtonPdf type="button" onClick={handlePdf}>
-          Generar PDF
-        </ButtonPdf>
-        {viewPdf && (
-          <PdfContainer>
-            <Pdf src={instance.url} type="application/pdf"></Pdf>
-          </PdfContainer>
-        )}
         <ButtonSend type="submit">Enviar</ButtonSend>
         {loading && <Loader />}
       </PaymentContainer>

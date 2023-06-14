@@ -1,16 +1,11 @@
-import Lottie from 'react-lottie'
 import styled from 'styled-components'
 
-export const UploadAnimation = ({ uploadFiles, animation, height, width }) => {
-  const uploadPhotoData = {
-    loop: true,
-    autoplay: true,
-    animationData: animation
-  }
+import uploadImage from '../assets/upload-image.jpg'
 
+export const UploadAnimation = ({ uploadFiles }) => {
   return (
     <AnimationContainer onClick={uploadFiles}>
-      <Lottie options={uploadPhotoData} height={height} width={width} />
+      <Img src={uploadImage} alt="upload-image" />
     </AnimationContainer>
   )
 }
@@ -20,3 +15,4 @@ const AnimationContainer = styled.div`
     cursor: pointer;
   }
 `
+const Img = styled.img``
