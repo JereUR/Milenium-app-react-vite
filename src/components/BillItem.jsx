@@ -167,7 +167,7 @@ export const BillItem = ({ bill, user, months }) => {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'output.pdf'
+    link.download = `${user.username} ${user.surname} - ${bill.month} ${bill.year}`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
